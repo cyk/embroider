@@ -188,7 +188,7 @@ export default class V1App implements V1Package {
       'ember-cli-babel': {
         includeExternalHelpers: true,
         compileModules: false,
-        disableDebugTooling: true,
+        disableDebugTooling: false,
         disablePresetEnv: false,
         disableEmberModulesAPIPolyfill: false,
         disableDecoratorTransforms: false,
