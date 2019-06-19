@@ -322,6 +322,7 @@ export default class V1App implements V1Package {
 
   private addNodeAssets(inputTree: Tree): Tree {
     let transformedNodeFiles = this.transformedNodeFiles();
+
     return new AddToTree(inputTree, outputPath => {
       for (let [localDestPath, sourcePath] of transformedNodeFiles) {
         let destPath = join(outputPath, localDestPath);
@@ -329,17 +330,38 @@ export default class V1App implements V1Package {
         copySync(sourcePath, destPath);
       }
 
+      const scriptOutputFiles = JSON.parse(JSON.stringify(this.app._scriptOutputFiles));
+      const styleOutputFiles = JSON.parse(JSON.stringify(this.app._styleOutputFiles));
+
+      const vendorJS = scriptOutputFiles[this.app.options.outputPaths.vendor.js];
+      const vendorCSS = styleOutputFiles[this.app.options.outputPaths.vendor.css];
+
+      delete scriptOutputFiles[this.app.options.outputPaths.vendor.js];
+      delete styleOutputFiles[this.app.options.outputPaths.vendor.css];
+
+      const publicAssets: any = Object.create(null);
+      for (let outputFile of Object.keys(scriptOutputFiles)) {
+        const keys = scriptOutputFiles[outputFile];
+        for (let key of keys) {
+          publicAssets[key] = outputFile;
+        }
+      }
+
+      for (let outputFile of Object.keys(styleOutputFiles)) {
+        const keys = styleOutputFiles[outputFile];
+        for (let key of keys) {
+          publicAssets[key] = outputFile;
+        }
+      }
+
       let addonMeta: AddonMeta = {
         type: 'addon',
         version: 2,
-        'implicit-scripts': this.remapImplicitAssets(
-          this.app._scriptOutputFiles[this.app.options.outputPaths.vendor.js]
-        ),
-        'implicit-styles': this.remapImplicitAssets(
-          this.app._styleOutputFiles[this.app.options.outputPaths.vendor.css]
-        ),
+        'implicit-scripts': this.remapImplicitAssets(vendorJS),
+        'implicit-styles': this.remapImplicitAssets(vendorCSS),
         'implicit-test-scripts': this.remapImplicitAssets(this.app.legacyTestFilesToAppend),
         'implicit-test-styles': this.remapImplicitAssets(this.app.vendorTestStaticStyles),
+        'public-assets': publicAssets,
       };
       let meta = {
         name: '@embroider/synthesized-vendor',
